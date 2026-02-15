@@ -1,5 +1,5 @@
-const CACHE_NAME = 'zakupy-cache-v1';
-const URLS_TO_CACHE = [
+const CACHE_NAME = 'zakupy-v1';
+const urlsToCache = [
   '/',
   '/index.html',
   '/styles.css',
@@ -7,14 +7,41 @@ const URLS_TO_CACHE = [
   '/manifest.webmanifest'
 ];
 
-self.addEventListener('install', (event) => {
+// Instalacja - cache podstawowych plików
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(URLS_TO_CACHE))
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Cache otwarty');
+        return cache.addAll(urlsToCache);
+      })
   );
 });
 
-self.addEventListener('fetch', (event) => {
+// Pobieranie plików - najpierw cache, potem sieć
+self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then((resp) => resp || fetch(event.request))
+    caches.match(event.request)
+      .then(response => {
+        // Cache hit - odpowiedź z cache
+        if (response) {
+          return response;
+        }
+        // Cache miss - pobierz z sieci
+        return fetch(event.request).then(networkResponse => {
+          // Zapisz w cache na przyszłość
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME)
+              .then(cache => {
+                cache.put(event.request, responseClone);
+              });
+          }
+          return networkResponse;
+        });
+      }).catch(() => {
+        // Offline - pokaż cacheowaną stronę
+        return caches.match('/index.html');
+      })
   );
 });
