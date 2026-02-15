@@ -1,4 +1,5 @@
-// Lista zakupów - DZIAŁAJĄCA z SHARE (link do listy)
+// Pełny app.js - wersja uproszczona BEZ service workera, DZIAŁAJĄCA na pulpicie Androida
+
 const STORAGE_KEY = 'shopping-lists-v1';
 
 let state = {
@@ -35,7 +36,6 @@ function renderListsSelect() {
 
   renderCurrentListTitle();
   renderItems();
-  renderShareButton();
 }
 
 function renderCurrentListTitle() {
@@ -47,4 +47,81 @@ function renderCurrentListTitle() {
 function renderItems() {
   const ul = document.getElementById('items-list');
   ul.innerHTML = '';
-  const list = state.lists[state.currentListId
+  const list = state.lists[state.currentListId];
+  if (!list) return;
+
+  list.items.forEach((item, index) => {
+    const li = document.createElement('li');
+    if (item.bought) li.classList.add('bought');
+
+    const span = document.createElement('span');
+    span.textContent = item.name;
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.textContent = item.bought ? '↩️' : '✔️';
+    toggleBtn.onclick = () => {
+      item.bought = !item.bought;
+      saveState();
+      renderItems();
+    };
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '🗑️';
+    removeBtn.onclick = () => {
+      list.items.splice(index, 1);
+      saveState();
+      renderItems();
+    };
+
+    li.append(span, toggleBtn, removeBtn);
+    ul.appendChild(li);
+  });
+}
+
+function addList(name) {
+  const id = Date.now().toString();
+  state.lists[id] = { name, items: [] };
+  state.currentListId = id;
+  saveState();
+  renderListsSelect();
+}
+
+function addItemToCurrentList(name) {
+  const list = state.lists[state.currentListId];
+  if (!list) return;
+  list.items.push({ name, bought: false });
+  saveState();
+  renderItems();
+}
+
+// INICJALIZACJA
+document.addEventListener('DOMContentLoaded', () => {
+  loadState();
+  renderListsSelect();
+
+  // Event listeners
+  document.getElementById('add-list-btn').onclick = () => {
+    const name = document.getElementById('new-list-name').value.trim();
+    if (name) {
+      addList(name);
+      document.getElementById('new-list-name').value = '';
+    }
+  };
+
+  document.getElementById('lists-select').onchange = (e) => {
+    state.currentListId = e.target.value;
+    saveState();
+    renderCurrentListTitle();
+    renderItems();
+  };
+
+  document.getElementById('add-item-form').onsubmit = (e) => {
+    e.preventDefault();
+    const name = document.getElementById('item-name').value.trim();
+    if (name) {
+      addItemToCurrentList(name);
+      document.getElementById('item-name').value = '';
+      document.getElementById('item-name').focus();
+    }
+  };
+});
