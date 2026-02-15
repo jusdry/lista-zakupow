@@ -1,7 +1,13 @@
+// NAPRAWIONA REJESTRACJA SERVICE WORKERA DLA GITHUB PAGES
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js');
+  navigator.serviceWorker.register('./service-worker.js', { 
+    scope: './' 
+  }).then(reg => {
+    console.log('Service Worker zarejestrowany!');
+  }).catch(err => {
+    console.log('Błąd Service Workera:', err);
+  });
 }
-
 
 const STORAGE_KEY = 'shopping-lists-v1';
 
@@ -135,3 +141,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderListsSelect();
 });
+
