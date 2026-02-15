@@ -1,18 +1,9 @@
-// NAPRAWIONA REJESTRACJA SERVICE WORKERA DLA GITHUB PAGES
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./service-worker.js', { 
-    scope: './' 
-  }).then(reg => {
-    console.log('Service Worker zarejestrowany!');
-  }).catch(err => {
-    console.log('Błąd Service Workera:', err);
-  });
-}
+// Pełny app.js - wersja uproszczona BEZ service workera, DZIAŁAJĄCA na pulpicie Androida
 
 const STORAGE_KEY = 'shopping-lists-v1';
 
 let state = {
-  lists: {},      // { listId: { name: 'Dom', items: [ {name, bought} ] } }
+  lists: {},
   currentListId: null
 };
 
@@ -25,7 +16,6 @@ function loadState() {
   if (saved) {
     state = JSON.parse(saved);
   } else {
-    // domyślna lista na start
     const id = 'dom';
     state.lists[id] = { name: 'Dom', items: [] };
     state.currentListId = id;
@@ -69,23 +59,21 @@ function renderItems() {
 
     const toggleBtn = document.createElement('button');
     toggleBtn.textContent = item.bought ? '↩️' : '✔️';
-    toggleBtn.addEventListener('click', () => {
+    toggleBtn.onclick = () => {
       item.bought = !item.bought;
       saveState();
       renderItems();
-    });
+    };
 
     const removeBtn = document.createElement('button');
     removeBtn.textContent = '🗑️';
-    removeBtn.addEventListener('click', () => {
+    removeBtn.onclick = () => {
       list.items.splice(index, 1);
       saveState();
       renderItems();
-    });
+    };
 
-    li.appendChild(span);
-    li.appendChild(toggleBtn);
-    li.appendChild(removeBtn);
+    li.append(span, toggleBtn, removeBtn);
     ul.appendChild(li);
   });
 }
@@ -106,39 +94,34 @@ function addItemToCurrentList(name) {
   renderItems();
 }
 
-// Inicjalizacja po załadowaniu strony
+// INICJALIZACJA
 document.addEventListener('DOMContentLoaded', () => {
   loadState();
+  renderListsSelect();
 
-  const newListInput = document.getElementById('new-list-name');
-  const addListBtn = document.getElementById('add-list-btn');
-  const listsSelect = document.getElementById('lists-select');
-  const addItemForm = document.getElementById('add-item-form');
-  const itemNameInput = document.getElementById('item-name');
+  // Event listeners
+  document.getElementById('add-list-btn').onclick = () => {
+    const name = document.getElementById('new-list-name').value.trim();
+    if (name) {
+      addList(name);
+      document.getElementById('new-list-name').value = '';
+    }
+  };
 
-  addListBtn.addEventListener('click', () => {
-    const name = newListInput.value.trim();
-    if (!name) return;
-    addList(name);
-    newListInput.value = '';
-  });
-
-  listsSelect.addEventListener('change', () => {
-    state.currentListId = listsSelect.value;
+  document.getElementById('lists-select').onchange = (e) => {
+    state.currentListId = e.target.value;
     saveState();
     renderCurrentListTitle();
     renderItems();
-  });
+  };
 
-  addItemForm.addEventListener('submit', (e) => {
+  document.getElementById('add-item-form').onsubmit = (e) => {
     e.preventDefault();
-    const name = itemNameInput.value.trim();
-    if (!name) return;
-    addItemToCurrentList(name);
-    itemNameInput.value = '';
-    itemNameInput.focus();
-  });
-
-  renderListsSelect();
+    const name = document.getElementById('item-name').value.trim();
+    if (name) {
+      addItemToCurrentList(name);
+      document.getElementById('item-name').value = '';
+      document.getElementById('item-name').focus();
+    }
+  };
 });
-
