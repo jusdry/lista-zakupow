@@ -1,31 +1,47 @@
-// Pełny app.js - wersja uproszczona BEZ service workera, DZIAŁAJĄCA na pulpicie Androida
-
-const STORAGE_KEY = 'shopping-lists-v1';
-
-let state = {
-  lists: {},
-  currentListId: null
+// Lista zakupów z SYNCHRONIZACJĄ LIVE - Firebase
+const firebaseConfig = {
+  // WSTAW TUTAJ PRAWdziWY config z Twojej bazy!
+  apiKey: "AIzaSyD8dQ1nZ2mN3pO4qR5sT6uV7wX8yZ9aB0cC1dE2f",
+  authDomain: "lista-zakupow-17d16.firebaseapp.com",
+  databaseURL: "https://lista-zakupow-17d16-default-rtdb.europe-west1.firebasedatabase.app/",
+  projectId: "lista-zakupow-17d16",
+  storageBucket: "lista-zakupow-17d16.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:abcdef123456"
 };
 
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+let state = { lists: {}, currentListId: null };
+let dbRef;
+
+function initFirebase() {
+  firebase.initializeApp(firebaseConfig);
+  dbRef = firebase.database().ref('lists');
+  
+  // SYNCHRONIZACJA LIVE
+  dbRef.on('value', snapshot => {
+    const data = snapshot.val() || {};
+    state.lists = data;
+    if (!state.currentListId || !state.lists[state.currentListId]) {
+      state.currentListId = Object.keys(data)[0] || 'dom';
+    }
+    renderEverything();
+  });
 }
 
-function loadState() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    state = JSON.parse(saved);
-  } else {
-    const id = 'dom';
-    state.lists[id] = { name: 'Dom', items: [] };
-    state.currentListId = id;
-  }
+function saveList(id, list) {
+  dbRef.child(id).set(list);
+}
+
+// Funkcje renderowania (jak wcześniej)
+function renderEverything() {
+  renderListsSelect();
+  renderCurrentListTitle();
+  renderItems();
 }
 
 function renderListsSelect() {
   const select = document.getElementById('lists-select');
   select.innerHTML = '';
-
   Object.entries(state.lists).forEach(([id, list]) => {
     const opt = document.createElement('option');
     opt.value = id;
@@ -33,9 +49,6 @@ function renderListsSelect() {
     if (id === state.currentListId) opt.selected = true;
     select.appendChild(opt);
   });
-
-  renderCurrentListTitle();
-  renderItems();
 }
 
 function renderCurrentListTitle() {
@@ -61,16 +74,14 @@ function renderItems() {
     toggleBtn.textContent = item.bought ? '↩️' : '✔️';
     toggleBtn.onclick = () => {
       item.bought = !item.bought;
-      saveState();
-      renderItems();
+      saveList(state.currentListId, list);
     };
 
     const removeBtn = document.createElement('button');
     removeBtn.textContent = '🗑️';
     removeBtn.onclick = () => {
       list.items.splice(index, 1);
-      saveState();
-      renderItems();
+      saveList(state.currentListId, list);
     };
 
     li.append(span, toggleBtn, removeBtn);
@@ -80,24 +91,31 @@ function renderItems() {
 
 function addList(name) {
   const id = Date.now().toString();
-  state.lists[id] = { name, items: [] };
+  const newList = { name, items: [] };
+  state.lists[id] = newList;
   state.currentListId = id;
-  saveState();
-  renderListsSelect();
+  saveList(id, newList);
 }
 
 function addItemToCurrentList(name) {
   const list = state.lists[state.currentListId];
   if (!list) return;
   list.items.push({ name, bought: false });
-  saveState();
-  renderItems();
+  saveList(state.currentListId, list);
 }
 
-// INICJALIZACJA
+// START APLIKACJI
 document.addEventListener('DOMContentLoaded', () => {
-  loadState();
-  renderListsSelect();
+  // Ładuj Firebase SDK
+  const script1 = document.createElement('script');
+  script1.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js';
+  script1.onload = () => {
+    const script2 = document.createElement('script');
+    script2.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js';
+    script2.onload = initFirebase;
+    document.head.appendChild(script2);
+  };
+  document.head.appendChild(script1);
 
   // Event listeners
   document.getElementById('add-list-btn').onclick = () => {
@@ -110,9 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('lists-select').onchange = (e) => {
     state.currentListId = e.target.value;
-    saveState();
-    renderCurrentListTitle();
-    renderItems();
+    renderEverything();
   };
 
   document.getElementById('add-item-form').onsubmit = (e) => {
@@ -121,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (name) {
       addItemToCurrentList(name);
       document.getElementById('item-name').value = '';
-      document.getElementById('item-name').focus();
     }
   };
 });
