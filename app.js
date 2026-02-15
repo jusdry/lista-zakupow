@@ -124,6 +124,33 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('item-name').focus();
     }
   };
+
+    // SHARE LISTY - ZMIANA LISTY PO LINKU
+  function initShare() {
+    const hash = window.location.hash.slice(7); // #lista=123
+    if (hash && state.lists[hash]) {
+      state.currentListId = hash;
+      renderListsSelect();
+    }
+
+    const shareBtn = document.createElement('button');
+    shareBtn.textContent = '📱 Share listy';
+    shareBtn.style.cssText = 'width:100%; margin:12px 0; background:#4caf50; color:white; padding:16px; border-radius:12px; font-size:16px;';
+    shareBtn.onclick = () => {
+      const list = state.lists[state.currentListId];
+      const shareUrl = `${window.location.origin}/lista-zakupow/#lista=${state.currentListId}`;
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert(`📱 Lista "${list.name}"\n\n${shareUrl}\n\n✅ Skopiowane do schowka!\nWyślij WhatsApp/SMS`);
+      }).catch(() => {
+        prompt('Skopiuj ten link:', shareUrl);
+      });
+    };
+    document.querySelector('.list-selector').appendChild(shareBtn);
+  }
+
+  // Dodaj na końcu funkcji DOMContentLoaded:
+  initShare();
+
   // PRZYCISK SHARE
   const shareBtn = document.createElement('button');
   shareBtn.textContent = '📱 Udostępnij listę';
@@ -139,4 +166,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 });
+
 
