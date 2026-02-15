@@ -1,8 +1,8 @@
 {
   "name": "Lista zakupów",
   "short_name": "Zakupy",
-  "start_url": "/",
-  "display": "standalone",
+  "start_url": "./index.html",
+  "display": "browser",
   "background_color": "#ffffff",
   "theme_color": "#2d7df6",
   "icons": [
@@ -18,3 +18,4 @@
     }
   ]
 }
+
