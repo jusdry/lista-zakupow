@@ -124,4 +124,19 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('item-name').focus();
     }
   };
+  // PRZYCISK SHARE
+  const shareBtn = document.createElement('button');
+  shareBtn.textContent = '📱 Udostępnij listę';
+  shareBtn.style.cssText = 'width:100%; margin:10px 0; background:#4caf50;';
+  shareBtn.onclick = () => {
+    const list = state.lists[state.currentListId];
+    const url = `${window.location.href}#lista=${state.currentListId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      alert(`Link do listy "${list.name}"\n${url}\n\nSkopiowany! Wyślij SMS-em`);
+    });
+  };
+  document.querySelector('.list-selector').appendChild(shareBtn);
+
+
 });
+
